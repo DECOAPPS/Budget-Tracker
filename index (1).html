@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Budget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e0c;
+      --surface: #1a1916;
+      --card: #222119;
+      --border: #2e2c28;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --cream: #f0ead8;
+      --muted: #6b6760;
+      --danger: #e05555;
+      --success: #5a9e6f;
+      --text: #e8e3d8;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    /* HEADER */
+    header {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--surface);
+    }
+
+    .header-left h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.7rem;
+      color: var(--cream);
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+
+    .header-left p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .month-badge {
+      background: var(--gold);
+      color: #1a1510;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* BUDGET CARDS */
+    .total-section {
+      padding: 20px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Top row: Total Budget + Total Spent side by side */
+    .budget-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .stat-amount {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.7rem;
+      color: var(--cream);
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+
+    .stat-amount .dollar {
+      font-size: 0.95rem;
+      color: var(--gold);
+      vertical-align: top;
+      margin-top: 3px;
+      display: inline-block;
+    }
+
+    .stat-card.budget-card .stat-amount { color: var(--gold-light); }
+
+    .budget-edit-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+    .budget-edit-btn:hover { color: var(--gold); }
+
+    /* Big "Amount Left" card */
+    .remaining-card {
+      background: linear-gradient(135deg, #1e1c18, #252320);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .remaining-card::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 130px; height: 130px;
+      background: radial-gradient(circle, rgba(201,168,76,0.1), transparent 70%);
+      border-radius: 50%;
+    }
+
+    .remaining-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .remaining-amount {
+      font-family: 'DM Serif Display', serif;
+      font-size: 3.2rem;
+      line-height: 1;
+      letter-spacing: -1.5px;
+      transition: color 0.4s;
+    }
+
+    .remaining-amount .dollar {
+      font-size: 1.5rem;
+      vertical-align: top;
+      margin-top: 6px;
+      display: inline-block;
+    }
+
+    .remaining-amount.safe   { color: var(--success); }
+    .remaining-amount.warn   { color: var(--gold); }
+    .remaining-amount.danger { color: var(--danger); }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-top: 14px;
+      background: var(--surface);
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.5s ease, background 0.4s;
+    }
+
+    .progress-bar.safe   { background: var(--success); }
+    .progress-bar.warn   { background: var(--gold); }
+    .progress-bar.danger { background: var(--danger); }
+
+    .progress-meta {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* Budget modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .modal h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      color: var(--cream);
+      margin-bottom: 6px;
+    }
+
+    .modal p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      padding: 12px;
+    }
+
+    .btn-save {
+      flex: 1;
+      background: var(--gold);
+      border: none;
+      border-radius: 10px;
+      color: #1a1510;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 12px;
+    }
+
+    /* ADD TRANSACTION */
+    .add-section {
+      padding: 0 20px 16px;
+    }
+
+    .add-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .add-card-header {
+      padding: 14px 18px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .add-card-header::before {
+      content: '+';
+      width: 18px; height: 18px;
+      background: var(--gold);
+      color: #1a1510;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      line-height: 18px;
+      text-align: center;
+    }
+
+    .add-form {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input, select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 300;
+      padding: 12px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--gold);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    select option {
+      background: var(--surface);
+    }
+
+    .btn-add {
+      background: var(--gold);
+      border: none;
+      border-radius: 10px;
+      color: #1a1510;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 13px;
+      width: 100%;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-add:active {
+      transform: scale(0.98);
+      background: var(--gold-light);
+    }
+
+    /* TRANSACTIONS */
+    .tx-section {
+      padding: 0 20px;
+    }
+
+    .tx-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .tx-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .tx-count {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tx-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .tx-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .tx-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tx-desc {
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--cream);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tx-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .tx-amount {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      color: var(--danger);
+      white-space: nowrap;
+    }
+
+    .tx-delete {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+      line-height: 1;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+
+    .tx-delete:hover { color: var(--danger); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 0.85rem;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--success);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: transform 0.3s ease;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Budget Tracker</h1>
+    <p id="headerSub">Spend with intention. Save with purpose.</p>
+  </div>
+  <div class="month-badge" id="monthBadge"></div>
+</header>
+
+<div class="total-section">
+  <!-- Top row: budget only -->
+  <div class="budget-row">
+    <div class="stat-card budget-card" style="flex:1">
+      <div class="stat-label">Total Budget</div>
+      <div class="stat-amount"><span class="dollar">$</span><span id="budgetDisplay">—</span></div>
+      <button class="budget-edit-btn" onclick="openBudgetModal()">✏️ Edit</button>
+    </div>
+  </div>
+
+  <!-- Big "Amount Left" card -->
+  <div class="remaining-card">
+    <div class="remaining-label">Amount Left</div>
+    <div class="remaining-amount safe" id="remainingAmount"><span class="dollar">$</span><span id="remainingValue">—</span></div>
+    <div class="progress-wrap">
+      <div class="progress-bar safe" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="progress-meta" id="progressMeta">Set your budget to get started</div>
+  </div>
+</div>
+
+<!-- Budget Modal -->
+<div class="modal-overlay" id="budgetModal">
+  <div class="modal">
+    <h2>Set Monthly Budget</h2>
+    <p>Enter your total budget for this month. Both of you will see it update.</p>
+    <input type="number" id="budgetInput" placeholder="e.g. 3000" min="0" step="1" />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeBudgetModal()">Cancel</button>
+      <button class="btn-save" onclick="saveBudget()">Save Budget</button>
+    </div>
+  </div>
+</div>
+
+<div class="add-section">
+  <div class="add-card">
+    <div class="add-card-header">Add Transaction</div>
+    <div class="add-form">
+      <input type="text" id="descInput" placeholder="What was it? (e.g. Walmart, Gas)" autocomplete="off" />
+      <div class="form-row">
+        <input type="number" id="amountInput" placeholder="Amount ($)" min="0" step="0.01" style="flex:1" />
+        <select id="whoInput" style="flex:1">
+          <option value="">Who spent?</option>
+          <option value="Me">Me</option>
+          <option value="Wife">Wife</option>
+        </select>
+      </div>
+      <input type="date" id="dateInput" />
+      <button class="btn-add" onclick="addTransaction()">Add Transaction</button>
+    </div>
+  </div>
+</div>
+
+<div class="tx-section">
+  <div class="tx-header">
+    <div class="tx-title">This Month's Transactions</div>
+    <div class="tx-count" id="txLabel"></div>
+  </div>
+  <div class="tx-list" id="txList">
+    <div class="empty-state">
+      <div class="icon">💳</div>
+      <p>No transactions yet.<br>Add your first one above.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let cachedTxs = [];
+  const BUDGET_KEY = 'family_budget_amount';
+
+  function getMonthKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function getBudget() {
+    return parseFloat(localStorage.getItem(BUDGET_KEY)) || 0;
+  }
+
+  function openBudgetModal() {
+    const b = getBudget();
+    document.getElementById('budgetInput').value = b > 0 ? b : '';
+    document.getElementById('budgetModal').classList.add('open');
+    setTimeout(() => document.getElementById('budgetInput').focus(), 100);
+  }
+
+  function closeBudgetModal() {
+    document.getElementById('budgetModal').classList.remove('open');
+  }
+
+  function saveBudget() {
+    const val = parseFloat(document.getElementById('budgetInput').value);
+    if (!val || val <= 0) { alert('Please enter a valid budget amount.'); return; }
+    localStorage.setItem(BUDGET_KEY, val);
+    closeBudgetModal();
+    render();
+    showToast('Budget updated ✓');
+  }
+
+  async function fetchTransactions() {
+    try {
+      const res = await fetch(`/api/transactions?month=${getMonthKey()}`);
+      cachedTxs = await res.json();
+    } catch {
+      cachedTxs = [];
+    }
+    render();
+  }
+
+  function formatAmount(n) {
+    return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function getCategoryIcon(desc) {
+    const d = desc.toLowerCase();
+    if (/walmart|target|costco|kroger|grocery|aldi|publix|food|market/.test(d)) return '🛒';
+    if (/gas|shell|bp|chevron|exxon|fuel|mobil/.test(d)) return '⛽';
+    if (/restaurant|mcdonald|burger|pizza|chick|taco|wendy|dine|cafe|coffee|starbuck/.test(d)) return '🍽️';
+    if (/amazon|ebay|shop|store|buy|order/.test(d)) return '📦';
+    if (/netflix|hulu|disney|spotify|game|movie|theatre/.test(d)) return '🎬';
+    if (/doctor|pharmacy|cvs|walgreen|medical|health|dental/.test(d)) return '💊';
+    if (/electric|water|internet|phone|bill|utility/.test(d)) return '🏠';
+    return '💳';
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function render() {
+    const txs = cachedTxs.slice().reverse();
+    const total = cachedTxs.reduce((s, t) => s + t.amount, 0);
+    const budget = getBudget();
+    const remaining = budget - total;
+    const pct = budget > 0 ? Math.min((total / budget) * 100, 100) : 0;
+
+    // Month badge
+    const now = new Date();
+    document.getElementById('monthBadge').textContent =
+      now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    // Budget display
+    document.getElementById('budgetDisplay').textContent = budget > 0 ? formatAmount(budget) : '—';
+
+    // Total spent
+    document.getElementById('totalAmount').textContent = formatAmount(total);
+
+    // Remaining
+    const remEl = document.getElementById('remainingAmount');
+    const remVal = document.getElementById('remainingValue');
+    const bar = document.getElementById('progressBar');
+    const meta = document.getElementById('progressMeta');
+
+    if (budget <= 0) {
+      remVal.textContent = '—';
+      remEl.className = 'remaining-amount safe';
+      bar.style.width = '0%';
+      bar.className = 'progress-bar safe';
+      meta.textContent = 'Tap ✏️ Edit to set your monthly budget';
+    } else {
+      const isOver = remaining < 0;
+      const state = pct >= 100 ? 'danger' : pct >= 75 ? 'warn' : 'safe';
+      remVal.textContent = (isOver ? '-' : '') + formatAmount(Math.abs(remaining));
+      remEl.className = `remaining-amount ${state}`;
+      bar.style.width = pct + '%';
+      bar.className = `progress-bar ${state}`;
+      const used = Math.round(pct);
+      meta.textContent = isOver
+        ? `Over budget by $${formatAmount(Math.abs(remaining))}`
+        : `${used}% of budget used · ${txs.length} transaction${txs.length !== 1 ? 's' : ''}`;
+    }
+
+    // Transaction list
+    const list = document.getElementById('txList');
+    document.getElementById('txLabel').textContent = txs.length ? txs.length + ' items' : '';
+
+    if (!txs.length) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">💳</div><p>No transactions yet.<br>Add your first one above.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = txs.map((tx) => `
+      <div class="tx-item">
+        <div class="tx-icon">${getCategoryIcon(tx.desc)}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${escHtml(tx.desc)}</div>
+          <div class="tx-meta">${formatDate(tx.date)} · ${escHtml(tx.who || 'Unknown')}</div>
+        </div>
+        <div class="tx-amount">-$${formatAmount(tx.amount)}</div>
+        <button class="tx-delete" onclick="deleteTransaction(${tx.id})" title="Delete">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  async function addTransaction() {
+    const desc   = document.getElementById('descInput').value.trim();
+    const amount = parseFloat(document.getElementById('amountInput').value);
+    const who    = document.getElementById('whoInput').value;
+    const date   = document.getElementById('dateInput').value;
+
+    if (!desc) { alert('Please enter a description.'); return; }
+    if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+    if (!who) { alert('Please select who spent this.'); return; }
+    if (!date) { alert('Please select a date.'); return; }
+
+    await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ desc, amount, who, date })
+    });
+
+    document.getElementById('descInput').value = '';
+    document.getElementById('amountInput').value = '';
+    document.getElementById('whoInput').value = '';
+
+    await fetchTransactions();
+    showToast('Transaction added ✓');
+  }
+
+  async function deleteTransaction(id) {
+    if (!confirm('Delete this transaction?')) return;
+    await fetch(`/api/transactions/${getMonthKey()}/${id}`, { method: 'DELETE' });
+    await fetchTransactions();
+    showToast('Deleted');
+  }
+
+  // Close modal on overlay click
+  document.getElementById('budgetModal').addEventListener('click', function(e) {
+    if (e.target === this) closeBudgetModal();
+  });
+
+  // Budget input enter key
+  document.getElementById('budgetInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveBudget();
+  });
+
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateInput').value = today;
+
+  // Enter key on inputs
+  ['descInput','amountInput'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTransaction();
+    });
+  });
+
+  fetchTransactions();
+  setInterval(fetchTransactions, 30000); // auto-refresh every 30s
+</script>
+</body>
+</html>

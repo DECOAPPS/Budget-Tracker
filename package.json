@@ -1,0 +1,12 @@
+{
+  "name": "family-budget-tracker",
+  "version": "1.0.0",
+  "description": "Shared family budget tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
